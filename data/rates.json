@@ -1,54 +1,18 @@
 {
-  "source": "Default",
-  "last_refresh": "2024-01-01T12:00:00",
+  "source": "ParserService",
+  "last_refresh": "2026-02-02T01:28:45.987495",
   "rates": {
-    "USD_EUR": {
-      "rate": 0.92,
-      "updated_at": "2024-01-01T12:00:00"
-    },
-    "EUR_USD": {
-      "rate": 1.09,
-      "updated_at": "2024-01-01T12:00:00"
-    },
-    "USD_BTC": {
-      "rate": 0.000025,
-      "updated_at": "2024-01-01T12:00:00"
-    },
     "BTC_USD": {
-      "rate": 40000.0,
-      "updated_at": "2024-01-01T12:00:00"
-    },
-    "USD_ETH": {
-      "rate": 0.0004,
-      "updated_at": "2024-01-01T12:00:00"
+      "rate": 76697.0,
+      "updated_at": "2026-02-02T01:28:45.987495"
     },
     "ETH_USD": {
-      "rate": 2500.0,
-      "updated_at": "2024-01-01T12:00:00"
+      "rate": 2297.6,
+      "updated_at": "2026-02-02T01:28:45.987495"
     },
-    "USD_RUB": {
-      "rate": 91.5,
-      "updated_at": "2024-01-01T12:00:00"
-    },
-    "RUB_USD": {
-      "rate": 0.0109,
-      "updated_at": "2024-01-01T12:00:00"
-    },
-    "EUR_BTC": {
-      "rate": 0.000027,
-      "updated_at": "2024-01-01T12:00:00"
-    },
-    "BTC_EUR": {
-      "rate": 36800.0,
-      "updated_at": "2024-01-01T12:00:00"
-    },
-    "EUR_ETH": {
-      "rate": 0.00043,
-      "updated_at": "2024-01-01T12:00:00"
-    },
-    "ETH_EUR": {
-      "rate": 2300.0,
-      "updated_at": "2024-01-01T12:00:00"
+    "SOL_USD": {
+      "rate": 101.41,
+      "updated_at": "2026-02-02T01:28:45.987495"
     }
   }
 }

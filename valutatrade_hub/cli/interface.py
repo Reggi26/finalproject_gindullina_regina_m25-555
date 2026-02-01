@@ -1,4 +1,3 @@
-
 import argparse
 import sys
 
@@ -53,6 +52,16 @@ class CLI:
         shell_parser = self.subparsers.add_parser('shell', help='Запустить интерактивную оболочку')
 
         refresh_parser = self.subparsers.add_parser('refresh-rates', help='Обновить все курсы валют')
+        
+        # НОВЫЕ КОМАНДЫ ДЛЯ PARSER SERVICE
+        update_parser = self.subparsers.add_parser('update-rates', help='Обновить курсы валют из внешних API')
+        update_parser.add_argument('--source', type=str, choices=['coingecko', 'exchangerate'], 
+                                  help='Обновить только указанный источник')
+        
+        show_rates_parser = self.subparsers.add_parser('show-rates', help='Показать курсы валют из локального кеша')
+        show_rates_parser.add_argument('--currency', type=str, help='Показать курс только для указанной валюты')
+        show_rates_parser.add_argument('--top', type=int, help='Показать N самых дорогих криптовалют')
+        show_rates_parser.add_argument('--base', type=str, default='USD', help='Базовая валюта для отображения')
 
     def _check_auth(self):
         if not self.current_user:
@@ -83,6 +92,11 @@ class CLI:
             self.handle_shell(args)
         elif args.command == 'refresh-rates':
             self.handle_refresh_rates(args)
+        # НОВЫЕ ОБРАБОТЧИКИ
+        elif args.command == 'update-rates':
+            self.handle_update_rates(args)
+        elif args.command == 'show-rates':
+            self.handle_show_rates(args)
         else:
             self.parser.print_help()
 
@@ -218,7 +232,6 @@ class CLI:
             print(f"\nКурс {from_currency}→{to_currency}: {rate_data['rate']:.8f} (обновлено: {timestamp})")
             print(f"Обратный курс {to_currency}→{from_currency}: {rate_data['reverse_rate']:.2f}")
 
-            # Показать информацию о валютах если есть
             if 'from_currency_info' in rate_data:
                 print("\nИнформация о валютах:")
                 print(f"  Из: {rate_data['from_currency_info']}")
@@ -243,6 +256,158 @@ class CLI:
             
         except Exception as e:
             print(f"Ошибка при обновлении курсов: {e}")
+
+    def handle_update_rates(self, args):
+        """
+        Обработка команды обновления курсов из внешних API
+        """
+        try:
+            from valutatrade_hub.parser_service.updater import RatesUpdater
+            
+            print("Запуск обновления курсов валют...")
+            print("-" * 50)
+            
+            updater = RatesUpdater()
+            results = updater.run_update(source_filter=args.source)
+            
+            if results["success"]:
+                print("ОБНОВЛЕНИЕ УСПЕШНО ЗАВЕРШЕНО")
+                print(f"Всего курсов: {results['total_rates']}")
+                print(f"Источников: {len(results['sources'])}")
+                
+                for source_name, source_result in results["sources"].items():
+                    status = "success" if source_result["status"] == "success" else "unsuccess"
+                    count = source_result.get('rates_count', 0)
+                    print(f"   {status} {source_name}: {count} курсов")
+                
+                print(f"Время обновления: {results['end_time']}")
+                print(f"Данные сохранены в rates.json и exchange_rates.json")
+            else:
+                print("ОБНОВЛЕНИЕ ЗАВЕРШЕНО С ОШИБКАМИ")
+                print(f"Курсов обновлено: {results['total_rates']}")
+                print(f"Ошибок: {len(results['errors'])}")
+                
+                for i, error in enumerate(results["errors"][:3], 1):
+                    error_short = error[:100] + "..." if len(error) > 100 else error
+                    print(f"   {i}. {error_short}")
+                
+                if len(results["errors"]) > 3:
+                    print(f"   ... и еще {len(results['errors']) - 3} ошибок")
+            
+            print("-" * 50)
+            
+        except ImportError:
+            print("Ошибка: Модуль parser_service не найден")
+            print("   Убедитесь, что файлы парсера созданы в valutatrade_hub/parser_service/")
+        except Exception as e:
+            print(f"Критическая ошибка при обновлении курсов: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def handle_show_rates(self, args):
+        """
+        Обработка команды показа курсов из локального кеша
+        """
+        try:
+            from valutatrade_hub.parser_service.storage import RatesStorage
+            
+            storage = RatesStorage()
+            data = storage.load_current_rates()
+            
+            if not data or "rates" not in data:
+                print("Локальный кеш курсов пуст")
+                print("   Выполните 'update-rates', чтобы загрузить данные")
+                return
+            
+            rates = data["rates"]
+            last_refresh = data.get("last_refresh", "неизвестно")
+            source = data.get("source", "неизвестно")
+            
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(last_refresh.replace('Z', '+00:00'))
+                last_refresh_str = dt.strftime("%d.%m.%Y %H:%M:%S")
+            except:
+                last_refresh_str = last_refresh
+            
+            print(f"\nКУРСЫ ВАЛЮТ (обновлено: {last_refresh_str})")
+            print(f"   Источник: {source}")
+            print("-" * 60)
+            
+            if args.currency:
+                currency = args.currency.upper()
+                filtered_rates = {}
+                for pair, info in rates.items():
+                    if "_" in pair:
+                        from_curr, to_curr = pair.split("_")
+                        if from_curr == currency or to_curr == currency:
+                            filtered_rates[pair] = info
+                
+                if not filtered_rates:
+                    print(f"Курсы для валюты '{currency}' не найдены")
+                    print("   Доступные валюты: USD, EUR, BTC, ETH, RUB, GBP, JPY")
+                    return
+                
+                rates = filtered_rates
+            
+            rate_list = []
+            for pair, info in rates.items():
+                if "_" in pair:
+                    from_curr, to_curr = pair.split("_")
+                    rate = info.get("rate", 0)
+                    updated_at = info.get("updated_at", "неизвестно")
+                    
+                    # Для фильтра --top считаем только крипто->USD пары
+                    if args.top and to_curr == "USD" and len(from_curr) == 3:
+                        rate_list.append((from_curr, rate, pair, updated_at))
+                    elif not args.top:
+                        rate_list.append((from_curr, rate, pair, updated_at))
+            
+            if args.top and rate_list:
+                rate_list.sort(key=lambda x: x[1], reverse=True)
+                rate_list = rate_list[:args.top]
+            
+            rate_list.sort(key=lambda x: x[0])
+            
+            if not rate_list:
+                print("   Нет данных для отображения")
+            else:
+                for currency, rate, pair, updated_at in rate_list:
+                    try:
+                        dt = datetime.fromisoformat(updated_at.replace('Z', '+00:00'))
+                        updated_time = dt.strftime("%H:%M:%S")
+                    except:
+                        updated_time = updated_at[:8] if len(updated_at) >= 8 else updated_at
+                    
+                    if rate >= 1000:
+                        rate_str = f"{rate:>15,.2f}"
+                    elif rate >= 1:
+                        rate_str = f"{rate:>15,.4f}"
+                    else:
+                        rate_str = f"{rate:>15,.8f}"
+                    
+                    print(f"   {pair:10} {rate_str}  (обновлено: {updated_time})")
+            
+            print("-" * 60)
+            print(f"   Всего пар: {len(rate_list)}")
+            
+            fresh_count = 0
+            stale_count = 0
+            for pair in rates:
+                age = storage.get_rate_age(pair)
+                if age is not None and age <= 300:  # 5 минут
+                    fresh_count += 1
+                else:
+                    stale_count += 1
+            
+            if stale_count > 0:
+                print(f"{stale_count} курсов устарели (требуют обновления)")
+            
+        except ImportError:
+            print("Ошибка:Модуль parser_service не найден")
+            print("   Убедитесь, что файлы парсера созданы в valutatrade_hub/parser_service/")
+        except Exception as e:
+            print(f"Ошибка при загрузке курсов: {e}")
 
     def handle_shell(self, args):
         print("=" * 60)
@@ -313,6 +478,13 @@ class CLI:
 
                 elif cmd == 'refresh-rates':
                     self.handle_refresh_rates(args)
+                
+                # НОВЫЕ КОМАНДЫ В SHELL
+                elif cmd == 'update-rates':
+                    self._process_shell_update_rates(command)
+                
+                elif cmd == 'show-rates':
+                    self._process_shell_show_rates(command)
 
                 else:
                     print(f"Неизвестная команда: {cmd}")
@@ -325,7 +497,6 @@ class CLI:
                 print(f"Ошибка: {str(e)}")
 
     def _print_shell_help(self):
-        """Вывод справки по командам shell."""
         print("\nДоступные команды:")
         print("  register --username USERNAME --password PASSWORD  - регистрация")
         print("  login --username USERNAME --password PASSWORD     - вход")
@@ -333,7 +504,9 @@ class CLI:
         print("  buy --currency CURRENCY --amount AMOUNT          - купить валюту")
         print("  sell --currency CURRENCY --amount AMOUNT         - продать валюту")
         print("  get-rate --from CURRENCY --to CURRENCY           - получить курс")
-        print("  refresh-rates                                    - обновить все курсы")
+        print("  refresh-rates                                    - обновить все курсы (старая версия)")
+        print("  update-rates [--source coingecko|exchangerate]   - обновить курсы из внешних API (новая)")
+        print("  show-rates [--currency CURRENCY] [--top N]       - показать курсы из кеша")
         print("  logout                                           - выход из системы")
         print("  exit                                             - выход из оболочки")
         print("  help                                             - эта справка")
@@ -521,6 +694,52 @@ class CLI:
         except ApiRequestError as e:
             print(f"Ошибка: {e}")
             print("Пожалуйста, повторите попытку позже или проверьте соединение с сетью")
+        except Exception as e:
+            print(f"Ошибка: {str(e)}")
+    
+    def _process_shell_update_rates(self, command):
+        """
+        Обработка команды update-rates в shell
+        """
+        try:
+            args = self._parse_shell_args(command)
+            source_filter = args.get('--source')
+            
+            class Args:
+                pass
+            
+            args_obj = Args()
+            args_obj.source = source_filter
+            
+            self.handle_update_rates(args_obj)
+            
+        except Exception as e:
+            print(f"Ошибка: {str(e)}")
+    
+    def _process_shell_show_rates(self, command):
+        """
+        Обработка команды show-rates в shell
+        """
+        try:
+            args = self._parse_shell_args(command)
+            
+            class Args:
+                pass
+            
+            args_obj = Args()
+            args_obj.currency = args.get('--currency')
+            args_obj.top = args.get('--top')
+            args_obj.base = args.get('--base', 'USD')
+            
+            if args_obj.top:
+                try:
+                    args_obj.top = int(args_obj.top)
+                except ValueError:
+                    print("Ошибка: --top должен быть числом")
+                    return
+            
+            self.handle_show_rates(args_obj)
+            
         except Exception as e:
             print(f"Ошибка: {str(e)}")
 
