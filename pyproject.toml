@@ -17,10 +17,9 @@ ruff = "^0.14.14"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-
 [tool.poetry.scripts]
-project = "src.primitive_db.main:main"
-database = "src.primitive_db.main:main"
+valutatrade = "valutatrade_hub.cli.interface:main"
+valutatrade-shell = "main:main"
 
 [tool.ruff]
 line-length = 88
