@@ -3,6 +3,13 @@
 import sys
 from getpass import getpass
 
+from valutatrade_hub.core.exceptions import (
+    ApiRequestError,
+    AuthenticationError,
+    CurrencyNotFoundError,
+    InsufficientFundsError,
+    InvalidAmountError,
+)
 from valutatrade_hub.core.usecases import PortfolioUseCases, RateUseCases, UserUseCases
 
 
@@ -15,6 +22,34 @@ def print_header(title):
     print_separator()
     print(title.center(50))
     print_separator()
+
+
+def safe_getpass(prompt="Пароль: "):
+    """
+    Ввод пароля для WSL. 
+    В WSL getpass может не работать корректно.
+    """
+    try:
+        password = getpass(prompt)
+        return password
+    except Exception:
+        print("\nИспользуем обычный ввод (пароль будет виден)")
+        return input(prompt).strip()
+
+
+def wait_for_enter(prompt="\nНажмите Enter для возврата в меню..."):
+    """Ожидание Enter с возможностью очистки буфера"""
+    try:
+        input(prompt)
+        import sys
+        while True:
+            import select
+            if select.select([sys.stdin], [], [], 0.0)[0]:
+                sys.stdin.read(1)
+            else:
+                break
+    except:
+        input(prompt)
 
 
 def main():
@@ -79,7 +114,7 @@ def main():
                     else:
                         print(f"\nОшибка: {message}")
 
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
 
                 elif choice == "2":
@@ -109,7 +144,26 @@ def main():
                     if not currency:
                         print("Код валюты обязателен.")
 
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
+
+                        continue
+
+                    try:
+
+                        amount = float(input(f"\nСколько {currency} покупаем: ").strip())
+
+                        if amount <= 0:
+                            print("Сумма должна быть положительной.")
+
+                            wait_for_enter()
+
+                            continue
+
+                    except ValueError:
+
+                        print("Пожалуйста, введите число.")
+
+                        wait_for_enter()
 
                         continue
 
@@ -122,7 +176,7 @@ def main():
 
                             print("Покупка невозможна - нет курса обмена.")
 
-                            input("\nНажмите Enter для возврата в меню...")
+                            wait_for_enter()
 
                             continue
 
@@ -133,7 +187,7 @@ def main():
 
                             print("Покупка невозможна.")
 
-                            input("\nНажмите Enter для возврата в меню...")
+                            wait_for_enter()
 
                             continue
 
@@ -142,25 +196,6 @@ def main():
                         print(f"\nТекущий курс: 1 {currency} = {display_rate:.2f} USD")
 
                         print(f"Обратный курс: 1 USD = {rate:.6f} {currency}")
-
-                    try:
-
-                        amount = float(input(f"\nСколько {currency} покупаем: ").strip())
-
-                        if amount <= 0:
-                            print("Сумма должна быть положительной.")
-
-                            input("\nНажмите Enter для возврата в меню...")
-
-                            continue
-
-                    except ValueError:
-
-                        print("Пожалуйста, введите число.")
-
-                        input("\nНажмите Enter для возврата в меню...")
-
-                        continue
 
                     if currency != "USD":
 
@@ -184,15 +219,28 @@ def main():
                             if confirm not in ['да', 'д', 'yes', 'y']:
                                 print("Покупка отменена.")
 
-                                input("\nНажмите Enter для возврата в меню...")
+                                wait_for_enter()
 
                                 continue
 
-                    success, message, cost = portfolio_manager.buy_currency(current_user.user_id, currency, amount)
+                    try:
+                        success, message, cost = portfolio_manager.buy_currency(current_user.user_id, currency, amount)
+                        print(f"\n{message}")
+                        
+                    except CurrencyNotFoundError as e:
+                        print(f"\nОшибка: {e}")
+                        print("Доступные валюты: USD, EUR, BTC, ETH, RUB, GBP, JPY, ADA, SOL, XRP")
+                        
+                    except InsufficientFundsError as e:
+                        print(f"\nОшибка: {e}")
+                        
+                    except InvalidAmountError as e:
+                        print(f"\nОшибка: {e}")
+                        
+                    except Exception as e:
+                        print(f"\nПроизошла непредвиденная ошибка: {e}")
 
-                    print(f"\n{message}")
-
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
                 elif choice == "3":
                     print_header("ПРОДАЖА ВАЛЮТЫ")
@@ -200,24 +248,38 @@ def main():
                     currency = input("Какую валюту продаем: ").strip().upper()
                     if not currency:
                         print("Код валюты обязателен.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
                     try:
                         amount = float(input(f"Сколько {currency} продаем: ").strip())
                         if amount <= 0:
                             print("Сумма должна быть положительной.")
-                            input("\nНажмиte Enter для возврата в меню...")
+                            wait_for_enter()
                             continue
                     except ValueError:
                         print("Пожалуйста, введите число.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
-                    success, message, revenue = portfolio_manager.sell_currency(current_user.user_id, currency, amount)
-                    print(f"\n{message}")
+                    try:
+                        success, message, revenue = portfolio_manager.sell_currency(current_user.user_id, currency, amount)
+                        print(f"\n{message}")
+                        
+                    except CurrencyNotFoundError as e:
+                        print(f"\nОшибка: {e}")
+                        print("Доступные валюты: USD, EUR, BTC, ETH, RUB, GBP, JPY, ADA, SOL, XRP")
+                        
+                    except InsufficientFundsError as e:
+                        print(f"\nОшибка: {e}")
+                        
+                    except InvalidAmountError as e:
+                        print(f"\nОшибка: {e}")
+                        
+                    except Exception as e:
+                        print(f"\nПроизошла непредвиденная ошибка: {e}")
 
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
                 elif choice == "4":
                     print_header("ИНФОРМАЦИЯ О ПРОФИЛЕ")
@@ -234,29 +296,29 @@ def main():
 
                     print("\nПримечание: Пароль не отображается для безопасности.")
 
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
                 elif choice == "5":
                     print_header("СМЕНА ПАРОЛЯ")
 
-                    current_password = getpass("Введите текущий пароль: ")
+                    current_password = safe_getpass("Введите текущий пароль: ")
 
                     if not current_user.verify_password(current_password):
                         print("\nОшибка: Неверный текущий пароль.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
-                    new_password = getpass("Введите новый пароль: ")
-                    confirm_password = getpass("Повторите новый пароль: ")
+                    new_password = safe_getpass("Введите новый пароль: ")
+                    confirm_password = safe_getpass("Повторите новый пароль: ")
 
                     if new_password != confirm_password:
                         print("\nОшибка: Новые пароли не совпадают.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
                     if len(new_password) < 4:
                         print("\nОшибка: Новый пароль должен быть не короче 4 символов.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
                     try:
@@ -284,7 +346,7 @@ def main():
                     except Exception as e:
                         print(f"\nНеизвестная ошибка: {e}")
 
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
                 elif choice == "6":
                     print_header("КУРС ВАЛЮТ")
@@ -294,24 +356,48 @@ def main():
 
                     if not from_currency or not to_currency:
                         print("Необходимо указать обе валюты.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
-                    success, rate_data, message = rate_manager.get_exchange_rate(from_currency, to_currency)
+                    try:
+                        success, rate_data, message = rate_manager.get_exchange_rate(from_currency, to_currency)
 
-                    if success:
-                        rate = rate_data['rate']
-                        timestamp = rate_data['updated_at'].strftime("%d.%m.%Y %H:%M")
+                        if success:
+                            rate = rate_data['rate']
+                            timestamp = rate_data['updated_at'].strftime("%d.%m.%Y %H:%M")
 
-                        print("\nКурс обмена:")
-                        print(f"  1 {from_currency} = {rate:.8f} {to_currency}")
-                        print("\nОбратный курс:")
-                        print(f"  1 {to_currency} = {1 / rate:.2f} {from_currency}")
-                        print(f"\nКурс обновлен: {timestamp}")
-                    else:
-                        print(f"\nОшибка: {message}")
+                            print("\nКурс обмена:")
+                            print(f"  1 {from_currency} = {rate:.8f} {to_currency}")
+                            print("\nОбратный курс:")
+                            print(f"  1 {to_currency} = {1 / rate:.2f} {from_currency}")
+                            print(f"\nКурс обновлен: {timestamp}")
+                            
+                            # Показать информацию о валютах если есть
+                            if 'from_currency_info' in rate_data:
+                                print("\nИнформация о валютах:")
+                                print(f"  Из: {rate_data['from_currency_info']}")
+                                print(f"  В: {rate_data['to_currency_info']}")
+                                
+                            if not rate_data.get('is_fresh', True):
+                                print("\n⚠ Внимание: курс может быть устаревшим")
+                        else:
+                            print(f"\nОшибка: {message}")
+                            
+                    except CurrencyNotFoundError as e:
+                        print(f"\nОшибка: {e}")
+                        print("Доступные валюты: USD, EUR, BTC, ETH, RUB, GBP, JPY, ADA, SOL, XRP")
+                        
+                    except ApiRequestError as e:
+                        print(f"\nОшибка: {e}")
+                        print("Пожалуйста, повторите попытку позже или проверьте соединение с сетью.")
+                        
+                    except ZeroDivisionError:
+                        print("\nОшибка: Нулевой курс. Операция невозможна.")
+                        
+                    except Exception as e:
+                        print(f"\nПроизошла ошибка: {e}")
 
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
                 elif choice == "7":
                     print_header("ВЫХОД ИЗ СИСТЕМЫ")
@@ -323,7 +409,7 @@ def main():
                     else:
                         print("\nВыход отменен.")
 
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
                 elif choice == "0":
                     print_header("ЗАВЕРШЕНИЕ РАБОТЫ")
@@ -335,11 +421,11 @@ def main():
                         break
                     else:
                         print("\nПродолжаем работу.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
 
                 else:
                     print("\nНеверный выбор. Пожалуйста, введите номер из меню.")
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
             else:
                 if choice == "1":
@@ -348,20 +434,20 @@ def main():
                     username = input("Придумайте имя пользователя: ").strip()
                     if not username:
                         print("Имя пользователя обязательно.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
-                    password = getpass("Придумайте пароль: ")
-                    confirm_password = getpass("Повторите пароль: ")
+                    password = safe_getpass("Придумайте пароль: ")
+                    confirm_password = safe_getpass("Повторите пароль: ")
 
                     if password != confirm_password:
                         print("\nОшибка: Пароли не совпадают.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
                     if len(password) < 4:
                         print("\nОшибка: Пароль должен быть не короче 4 символов.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
                     success, message, user_id = user_manager.register_user(username, password)
@@ -373,23 +459,30 @@ def main():
                             current_user = user
                             print("\nАвтоматический вход выполнен.")
 
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
                 elif choice == "2":
                     print_header("ВХОД В СИСТЕМУ")
 
                     username = input("Имя пользователя: ").strip()
-                    password = getpass("Пароль: ")
+                    password = safe_getpass("Пароль: ")
 
-                    success, user, message = user_manager.authenticate_user(username, password)
+                    try:
+                        success, user, message = user_manager.authenticate_user(username, password)
 
-                    if success:
-                        current_user = user
-                        print(f"\n{message}")
-                    else:
-                        print(f"\n{message}")
+                        if success:
+                            current_user = user
+                            print(f"\n{message}")
+                        else:
+                            print(f"\n{message}")
+                            
+                    except AuthenticationError as e:
+                        print(f"\nОшибка аутентификации: {e}")
+                        
+                    except Exception as e:
+                        print(f"\nПроизошла ошибка: {e}")
 
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
                 elif choice == "3":
                     print_header("КУРС ВАЛЮТ")
@@ -399,24 +492,47 @@ def main():
 
                     if not from_currency or not to_currency:
                         print("Необходимо указать обе валюты.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
                         continue
 
-                    success, rate_data, message = rate_manager.get_exchange_rate(from_currency, to_currency)
+                    try:
+                        success, rate_data, message = rate_manager.get_exchange_rate(from_currency, to_currency)
 
-                    if success:
-                        rate = rate_data['rate']
-                        timestamp = rate_data['updated_at'].strftime("%d.%m.%Y %H:%M")
+                        if success:
+                            rate = rate_data['rate']
+                            timestamp = rate_data['updated_at'].strftime("%d.%m.%Y %H:%M")
 
-                        print("\nКурс обмена:")
-                        print(f"  1 {from_currency} = {rate:.8f} {to_currency}")
-                        print("\nОбратный курс:")
-                        print(f"  1 {to_currency} = {1 / rate:.2f} {from_currency}")
-                        print(f"\nКурс обновлен: {timestamp}")
-                    else:
-                        print(f"\nОшибка: {message}")
+                            print("\nКурс обмена:")
+                            print(f"  1 {from_currency} = {rate:.8f} {to_currency}")
+                            print("\nОбратный курс:")
+                            print(f"  1 {to_currency} = {1 / rate:.2f} {from_currency}")
+                            print(f"\nКурс обновлен: {timestamp}")
+                            
+                            if 'from_currency_info' in rate_data:
+                                print("\nИнформация о валютах:")
+                                print(f"  Из: {rate_data['from_currency_info']}")
+                                print(f"  В: {rate_data['to_currency_info']}")
+                                
+                            if not rate_data.get('is_fresh', True):
+                                print("\n⚠ Внимание: курс может быть устаревшим")
+                        else:
+                            print(f"\nОшибка: {message}")
+                            
+                    except CurrencyNotFoundError as e:
+                        print(f"\nОшибка: {e}")
+                        print("Доступные валюты: USD, EUR, BTC, ETH, RUB, GBP, JPY, ADA, SOL, XRP")
+                        
+                    except ApiRequestError as e:
+                        print(f"\nОшибка: {e}")
+                        print("Пожалуйста, повторите попытку позже или проверьте соединение с сетью.")
+                        
+                    except ZeroDivisionError:
+                        print("\nОшибка: Нулевой курс. Операция невозможна.")
+                        
+                    except Exception as e:
+                        print(f"\nПроизошла ошибка: {e}")
 
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
                 elif choice == "0":
                     print_header("ЗАВЕРШЕНИЕ РАБОТЫ")
@@ -428,11 +544,11 @@ def main():
                         break
                     else:
                         print("\nПродолжаем работу.")
-                        input("\nНажмите Enter для возврата в меню...")
+                        wait_for_enter()
 
                 else:
                     print("\nНеверный выбор. Пожалуйста, введите номер из меню.")
-                    input("\nНажмите Enter для возврата в меню...")
+                    wait_for_enter()
 
     except KeyboardInterrupt:
         print("\n\nРабота программы прервана пользователем.")

@@ -1,1 +1,9 @@
-{}
+[
+  {
+    "user_id": 1,
+    "username": "руя",
+    "hashed_password": "659efb356d3dc965c5895ff9bcd55f5ac0c70397464bc794d62c0ae4e3af6f69",
+    "salt": "W2KcYcNo",
+    "registration_date": "2026-02-01T21:55:38.452682"
+  }
+]

@@ -2,24 +2,17 @@ import hashlib
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+from valutatrade_hub.core.currencies import CurrencyNotFoundError, get_currency
+from valutatrade_hub.core.exceptions import InsufficientFundsError
+
 
 class User:
     """
-    Класс пользователя системы ValutaTrade Hub
+    Класс пользователя системы
     """
 
     def __init__(self, user_id: int, username: str, hashed_password: str,
                  salt: str, registration_date: datetime):
-        """
-        Конструктор класса User
-
-        Args:
-            user_id: уникальный идентификатор пользователя
-            username: имя пользователя
-            hashed_password: пароль в зашифрованном виде
-            salt: уникальная соль для пользователя
-            registration_date: дата регистрации пользователя
-        """
         self._user_id = user_id
         self._username = username
         self._hashed_password = hashed_password
@@ -55,12 +48,6 @@ class User:
     def username(self, value: str) -> None:
         """
         Устанавливает новое имя пользователя
-
-        Args:
-            value: новое имя пользователя
-
-        Raises:
-            ValueError: если имя пустое
         """
         if not value or not value.strip():
             raise ValueError("Имя пользователя не может быть пустым")
@@ -70,9 +57,6 @@ class User:
     def hashed_password(self, value: str) -> None:
         """
         Устанавливает новый хешированный пароль
-
-        Args:
-            value: новый хешированный пароль
         """
         self._hashed_password = value
 
@@ -80,18 +64,12 @@ class User:
     def salt(self, value: str) -> None:
         """
         Устанавливает новую соль
-
-        Args:
-            value: новая соль
         """
         self._salt = value
 
     def get_user_info(self) -> Dict[str, Any]:
         """
         Возвращает информацию о пользователе (без пароля)
-
-        Returns:
-            Словарь с информацией о пользователе
         """
         return {
             "user_id": self._user_id,
@@ -102,18 +80,11 @@ class User:
     def change_password(self, new_password: str) -> None:
         """
         Изменяет пароль пользователя
-
-        Args:
-            new_password: новый пароль пользователя
-
-        Raises:
-            ValueError: если пароль слишком короткий
         """
         if len(new_password) < 4:
             raise ValueError("Пароль должен содержать не менее 4 символов")
 
         new_salt = self._generate_salt()
-
         new_hashed_password = self._hash_password(new_password, new_salt)
 
         self._salt = new_salt
@@ -122,28 +93,14 @@ class User:
     def verify_password(self, password: str) -> bool:
         """
         Проверяет введённый пароль на совпадение
-
-        Args:
-            password: пароль для проверки
-
-        Returns:
-            True если пароль верный, иначе False
         """
         test_hash = self._hash_password(password, self._salt)
-
         return self._secure_hash_compare(test_hash, self._hashed_password)
 
     @staticmethod
     def _hash_password(password: str, salt: str) -> str:
         """
         Хеширует пароль с солью
-
-        Args:
-            password: пароль для хеширования
-            salt: соль для хеширования
-
-        Returns:
-            Хешированный пароль в hex-формате
         """
         hasher = hashlib.sha256()
         hasher.update(password.encode('utf-8'))
@@ -154,9 +111,6 @@ class User:
     def _generate_salt() -> str:
         """
         Генерирует случайную соль
-
-        Returns:
-            Соль в виде строки
         """
         import secrets
         import string
@@ -168,13 +122,6 @@ class User:
     def _secure_hash_compare(hash1: str, hash2: str) -> bool:
         """
         Безопасное сравнение хешей (constant-time comparison)
-
-        Args:
-            hash1: первый хеш
-            hash2: второй хеш
-
-        Returns:
-            True если хеши равны, иначе False
         """
         if len(hash1) != len(hash2):
             return False
@@ -188,16 +135,6 @@ class User:
     def create_new(cls, username: str, password: str) -> 'User':
         """
         Создаёт нового пользователя
-
-        Args:
-            username: имя пользователя
-            password: пароль пользователя
-
-        Returns:
-            Новый объект User
-
-        Raises:
-            ValueError: если имя или пароль невалидны
         """
         if not username or not username.strip():
             raise ValueError("Имя пользователя не может быть пустым")
@@ -206,9 +143,7 @@ class User:
             raise ValueError("Пароль должен содержать не менее 4 символов")
 
         user_id = int(datetime.now().timestamp() * 1000)
-
         salt = cls._generate_salt()
-
         hashed_password = cls._hash_password(password, salt)
 
         return cls(
@@ -223,12 +158,6 @@ class User:
     def from_dict(cls, data: Dict[str, Any]) -> 'User':
         """
         Создаёт пользователя из словаря (например, из JSON)
-
-        Args:
-            data: словарь с данными пользователя
-
-        Returns:
-            Объект User
         """
         reg_date = datetime.fromisoformat(data["registration_date"])
 
@@ -243,9 +172,6 @@ class User:
     def to_dict(self) -> Dict[str, Any]:
         """
         Преобразует объект пользователя в словарь для сохранения в JSON
-
-        Returns:
-            Словарь с данными пользователя
         """
         return {
             "user_id": self._user_id,
@@ -271,9 +197,16 @@ class Wallet:
 
         Raises:
             ValueError: если код валюты пустой или баланс отрицательный
+            CurrencyNotFoundError: если валюта не найдена в системе
         """
         if not currency_code or not currency_code.strip():
             raise ValueError("Код валюты не может быть пустым")
+
+        try:
+            currency = get_currency(currency_code)
+            self._currency = currency
+        except CurrencyNotFoundError as e:
+            raise ValueError(f"Неизвестная валюта: {currency_code}") from e
 
         self._currency_code = currency_code.strip().upper()
         self._balance = 0.0
@@ -293,12 +226,6 @@ class Wallet:
     def balance(self, value: float) -> None:
         """
         Устанавливает баланс кошелька
-
-        Args:
-            value: новое значение баланса
-
-        Raises:
-            ValueError: если баланс отрицательный или некорректный тип
         """
         if not isinstance(value, (int, float)):
             raise TypeError(f"Баланс должен быть числом, получен {type(value)}")
@@ -307,7 +234,7 @@ class Wallet:
         if value < 0:
             raise ValueError("Баланс не может быть отрицательным")
 
-        if self._currency_code == "USD" or self._currency_code == "EUR" or len(self._currency_code) == 3:
+        if self._currency_code in ["USD", "EUR", "RUB", "GBP", "JPY"] or len(self._currency_code) == 3:
             self._balance = round(value, 2)
         else:
             self._balance = round(value, 8)
@@ -315,15 +242,6 @@ class Wallet:
     def deposit(self, amount: float) -> bool:
         """
         Пополнение баланса кошелька
-
-        Args:
-            amount: сумма для пополнения
-
-        Returns:
-            True если операция успешна
-
-        Raises:
-            ValueError: если сумма некорректна
         """
         if not isinstance(amount, (int, float)):
             raise TypeError(f"Сумма должна быть числом, получен {type(amount)}")
@@ -338,15 +256,6 @@ class Wallet:
     def withdraw(self, amount: float) -> bool:
         """
         Снятие средств с кошелька
-
-        Args:
-            amount: сумма для снятия
-
-        Returns:
-            True если операция успешна, False если недостаточно средств
-
-        Raises:
-            ValueError: если сумма некорректна
         """
         if not isinstance(amount, (int, float)):
             raise TypeError(f"Сумма должна быть числом, получен {type(amount)}")
@@ -356,7 +265,11 @@ class Wallet:
             raise ValueError("Сумма снятия должна быть положительной")
 
         if amount > self._balance:
-            return False
+            raise InsufficientFundsError(
+                currency_code=self._currency_code,
+                available=self._balance,
+                required=amount
+            )
 
         self.balance = self._balance - amount
         return True
@@ -364,9 +277,6 @@ class Wallet:
     def get_balance_info(self) -> dict:
         """
         Возвращает информацию о текущем балансе
-
-        Returns:
-            Словарь с информацией о балансе
         """
         return {
             "currency_code": self._currency_code,
@@ -378,9 +288,6 @@ class Wallet:
     def to_dict(self) -> dict:
         """
         Преобразует объект кошелька в словарь для сохранения в JSON
-
-        Returns:
-            Словарь с данными кошелька
         """
         return {
             "currency_code": self._currency_code,
@@ -391,12 +298,6 @@ class Wallet:
     def from_dict(cls, data: dict) -> 'Wallet':
         """
         Создаёт объект Wallet из словаря
-
-        Args:
-            data: словарь с данными кошелька
-
-        Returns:
-            Объект Wallet
         """
         return cls(
             currency_code=data.get("currency_code", ""),
@@ -417,10 +318,6 @@ class Portfolio:
     def __init__(self, user_id: int, wallets: Optional[Dict[str, Wallet]] = None):
         """
         Конструктор класса Portfolio
-
-        Args:
-            user_id: уникальный идентификатор пользователя
-            wallets: словарь кошельков (код валюты -> объект Wallet)
         """
         self._user_id = user_id
         self._wallets = wallets if wallets is not None else {}
@@ -453,13 +350,6 @@ class Portfolio:
     def add_currency(self, currency_code: str, initial_balance: float = 0.0) -> bool:
         """
         Добавляет новый кошелёк в портфель
-
-        Args:
-            currency_code: код валюты
-            initial_balance: начальный баланс
-
-        Returns:
-            True если кошелёк добавлен, False если уже существует
         """
         currency_code = currency_code.strip().upper()
 
@@ -470,18 +360,12 @@ class Portfolio:
             wallet = Wallet(currency_code=currency_code, balance=initial_balance)
             self._wallets[currency_code] = wallet
             return True
-        except ValueError:
+        except (ValueError, CurrencyNotFoundError):
             return False
 
     def get_wallet(self, currency_code: str) -> Optional[Wallet]:
         """
         Возвращает объект Wallet по коду валюты
-
-        Args:
-            currency_code: код валюты
-
-        Returns:
-            Объект Wallet или None, если не найден
         """
         currency_code = currency_code.strip().upper()
         return self._wallets.get(currency_code)
@@ -489,12 +373,6 @@ class Portfolio:
     def get_or_create_wallet(self, currency_code: str) -> Wallet:
         """
         Получает кошелёк по коду валюты или создаёт новый, если не существует
-
-        Args:
-            currency_code: код валюты
-
-        Returns:
-            Объект Wallet
         """
         wallet = self.get_wallet(currency_code)
         if wallet is None:
@@ -503,6 +381,9 @@ class Portfolio:
         return wallet
 
     def get_total_value(self, base_currency: str = 'USD') -> float:
+        """
+        Рассчитывает общую стоимость портфеля в базовой валюте
+        """
         total_value = 0.0
 
         for currency_code, wallet in self._wallets.items():
@@ -521,8 +402,10 @@ class Portfolio:
 
         return round(total_value, 2)
 
-
     def get_exchange_rate(self, from_currency: str, to_currency: str) -> Optional[float]:
+        """
+        Получает курс обмена между валютами
+        """
         if from_currency == to_currency:
             return 1.0
 
@@ -534,19 +417,11 @@ class Portfolio:
         elif reverse_rate_key in self._exchange_rates:
             return 1.0 / self._exchange_rates[reverse_rate_key]
 
-        return None    
+        return None
 
-    
     def deposit_to_wallet(self, currency_code: str, amount: float) -> bool:
         """
         Пополняет кошелёк указанной валюты
-
-        Args:
-            currency_code: код валюты
-            amount: сумма для пополнения
-
-        Returns:
-            True если операция успешна
         """
         wallet = self.get_wallet(currency_code)
         if wallet is None:
@@ -560,33 +435,20 @@ class Portfolio:
     def withdraw_from_wallet(self, currency_code: str, amount: float) -> bool:
         """
         Снимает средства с кошелька указанной валюты
-
-        Args:
-            currency_code: код валюты
-            amount: сумма для снятия
-
-        Returns:
-            True если операция успешна
         """
         wallet = self.get_wallet(currency_code)
         if wallet is None:
             return False
 
-        return wallet.withdraw(amount)
+        try:
+            return wallet.withdraw(amount)
+        except (ValueError, TypeError, InsufficientFundsError):
+            return False
 
     def transfer_between_wallets(self, from_currency: str, to_currency: str,
                                  amount: float, exchange_rate: float = 1.0) -> bool:
         """
         Переводит средства между кошельками разных валют
-
-        Args:
-            from_currency: валюта источника
-            to_currency: валюта назначения
-            amount: сумма в валюте источника
-            exchange_rate: курс обмена (количество валюты назначения за 1 единицу источника)
-
-        Returns:
-            True если перевод успешен
         """
         if from_currency == to_currency:
             if not self.withdraw_from_wallet(from_currency, amount):
@@ -602,9 +464,6 @@ class Portfolio:
     def get_portfolio_info(self) -> dict:
         """
         Возвращает полную информацию о портфеле
-
-        Returns:
-            Словарь с информацией о портфеле
         """
         wallets_info = {}
         for currency_code, wallet in self._wallets.items():
@@ -621,37 +480,31 @@ class Portfolio:
     def _get_default_exchange_rates(self) -> Dict[str, float]:
         """
         Возвращает фиксированные курсы обмена для демонстрации
-
-        Returns:
-            Словарь с курсами обмена
         """
         return {
             "USD_EUR": 0.92,
             "USD_BTC": 0.000025,
             "USD_ETH": 0.0004,
+            "USD_RUB": 91.5,
+            "USD_GBP": 0.79,
+            "USD_JPY": 150.0,
 
             "EUR_USD": 1.09,
             "EUR_BTC": 0.000027,
             "EUR_ETH": 0.00043,
 
             "BTC_USD": 40000.0,
-            "ETH_USD": 2500.0,
-
             "BTC_EUR": 36800.0,
-            "ETH_EUR": 2300.0,
-
             "BTC_ETH": 16.0,
+
+            "ETH_USD": 2500.0,
+            "ETH_EUR": 2300.0,
             "ETH_BTC": 0.0625,
         }
 
     def update_exchange_rate(self, from_currency: str, to_currency: str, rate: float) -> None:
         """
         Обновляет курс обмена между валютами
-
-        Args:
-            from_currency: исходная валюта
-            to_currency: целевая валюта
-            rate: курс обмена
         """
         key = f"{from_currency.upper()}_{to_currency.upper()}"
         self._exchange_rates[key] = rate
@@ -659,9 +512,6 @@ class Portfolio:
     def to_dict(self) -> dict:
         """
         Преобразует объект портфеля в словарь для сохранения в JSON
-
-        Returns:
-            Словарь с данными портфеля
         """
         wallets_dict = {}
         for currency_code, wallet in self._wallets.items():
@@ -676,12 +526,6 @@ class Portfolio:
     def from_dict(cls, data: dict) -> 'Portfolio':
         """
         Создаёт объект Portfolio из словаря
-
-        Args:
-            data: словарь с данными портфеля
-
-        Returns:
-            Объект Portfolio
         """
         wallets = {}
         for currency_code, wallet_data in data.get("wallets", {}).items():
@@ -695,6 +539,5 @@ class Portfolio:
         )
 
     def __str__(self) -> str:
-        """Строковое представление портфеля"""
         info = self.get_portfolio_info()
         return f"Портфель пользователя {self._user_id}: {info['wallet_count']} кошельков, общая стоимость: ${info['total_value_usd']:.2f}"
