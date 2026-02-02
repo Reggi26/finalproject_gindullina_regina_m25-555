@@ -1,6 +1,6 @@
 {
-  "source": "ParserService",
-  "last_refresh": "2026-02-02T01:28:45.987495",
+  "source": "ExternalAPI",
+  "last_refresh": "2026-02-02T04:25:19.798499",
   "rates": {
     "BTC_USD": {
       "rate": 76697.0,
@@ -13,6 +13,14 @@
     "SOL_USD": {
       "rate": 101.41,
       "updated_at": "2026-02-02T01:28:45.987495"
+    },
+    "USD_BTC": {
+      "rate": 2.5e-05,
+      "updated_at": "2026-02-02T04:24:46.586765"
+    },
+    "USD_EUR": {
+      "rate": 0.92,
+      "updated_at": "2026-02-02T04:25:19.798481"
     }
   }
 }

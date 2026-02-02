@@ -1,0 +1,13 @@
+2026-02-02 03:47:57 ERROR    [decorators.py:86] 2026-02-02T03:47:57 REGISTER currency='123' result=ERROR exec_time=701091.19ms
+2026-02-02 03:50:00 ERROR    [decorators.py:86] 2026-02-02T03:50:00 REGISTER currency='12345' result=ERROR exec_time=100596.83ms
+2026-02-02 03:52:38 ERROR    [decorators.py:86] 2026-02-02T03:52:38 REGISTER currency='дв' result=ERROR exec_time=136494.94ms
+2026-02-02 03:52:49 INFO     [decorators.py:84] 2026-02-02T03:52:49 LOGIN currency='123' result=OK exec_time=14.48ms
+2026-02-02 03:57:46 INFO     [decorators.py:84] 2026-02-02T03:57:46 LOGIN currency='123' result=OK exec_time=0.24ms
+2026-02-02 04:03:28 INFO     [decorators.py:84] 2026-02-02T04:03:28 LOGIN currency='123' result=OK exec_time=17.75ms
+2026-02-02 04:07:33 INFO     [decorators.py:84] 2026-02-02T04:07:33 LOGIN currency='123456' result=OK exec_time=0.17ms
+2026-02-02 04:20:13 ERROR    [decorators.py:86] 2026-02-02T04:20:13 REGISTER currency='123' result=ERROR exec_time=514229.06ms
+2026-02-02 04:20:23 INFO     [decorators.py:84] 2026-02-02T04:20:23 REGISTER currency='123' result=OK exec_time=18.32ms
+2026-02-02 04:20:23 INFO     [decorators.py:84] 2026-02-02T04:20:23 LOGIN currency='123' result=OK exec_time=0.06ms
+2026-02-02 04:24:24 INFO     [decorators.py:84] 2026-02-02T04:24:24 REGISTER currency='test1' result=OK exec_time=18.42ms
+2026-02-02 04:24:24 INFO     [decorators.py:84] 2026-02-02T04:24:24 LOGIN currency='test1' result=OK exec_time=0.06ms
+2026-02-02 04:24:54 ERROR    [decorators.py:86] 2026-02-02T04:24:54 BUY result=ERROR exec_time=0.19ms error_type='InsufficientFundsError' error='Недостаточно средств: доступно 0.0000 USD, требуется 120000.0000 USD'

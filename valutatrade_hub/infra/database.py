@@ -56,22 +56,18 @@ class DatabaseManager:
         """
         Сохраняет данные в JSON файл
         """
-        with self._lock:  # Потокобезопасная запись
+        with self._lock:
             filepath = self._get_file_path(filename)
             
             try:
-                # Создаем директорию если её нет
                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
                 
-                # Сохраняем во временный файл
                 temp_filepath = filepath + '.tmp'
                 with open(temp_filepath, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
                 
-                # Переименовываем временный файл в основной
                 os.replace(temp_filepath, filepath)
                 
-                # Обновляем кеш
                 self._cache[filename] = data
                 return True
                 
@@ -83,19 +79,18 @@ class DatabaseManager:
         """
         Атомарно обновляет данные в JSON файле
         """
-        with self._lock:  # Потокобезопасное обновление
-            try:
-                current_data = self.load_json(filename, {})
-                updated_data = updater_func(current_data)
-                
-                if updated_data is not None:
-                    success = self.save_json(filename, updated_data)
-                    return updated_data if success else None
-                return None
-                
-            except Exception as e:
-                print(f"Error updating {filename}: {e}")
-                return None
+        try:
+            current_data = self.load_json(filename, {})
+            updated_data = updater_func(current_data)
+            
+            if updated_data is not None:
+                success = self.save_json(filename, updated_data)
+                return updated_data if success else None
+            return None
+            
+        except Exception as e:
+            print(f"Error updating {filename}: {e}")
+            return None
     
     def clear_cache(self, filename: Optional[str] = None) -> None:
         """

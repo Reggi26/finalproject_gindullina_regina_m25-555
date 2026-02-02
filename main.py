@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-from getpass import getpass
 
 from valutatrade_hub.core.exceptions import (
     ApiRequestError,
@@ -30,7 +29,8 @@ def safe_getpass(prompt="Пароль: "):
     В WSL getpass может не работать корректно.
     """
     try:
-        password = getpass(prompt)
+        import getpass as gp
+        password = gp.getpass(prompt)
         return password
     except Exception:
         print("\nИспользуем обычный ввод (пароль будет виден)")
@@ -38,18 +38,11 @@ def safe_getpass(prompt="Пароль: "):
 
 
 def wait_for_enter(prompt="\nНажмите Enter для возврата в меню..."):
-    """Ожидание Enter с возможностью очистки буфера"""
+    """Ожидание Enter с упрощенной логикой"""
     try:
         input(prompt)
-        import sys
-        while True:
-            import select
-            if select.select([sys.stdin], [], [], 0.0)[0]:
-                sys.stdin.read(1)
-            else:
-                break
     except Exception:
-        input(prompt)
+        pass
 
 
 def main():
