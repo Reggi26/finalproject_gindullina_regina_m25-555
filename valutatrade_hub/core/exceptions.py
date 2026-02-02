@@ -9,7 +9,10 @@ class InsufficientFundsError(ValutaTradeError):
         self.currency_code = currency_code
         self.available = available
         self.required = required
-        message = f"Недостаточно средств: доступно {available:.4f} {currency_code}, требуется {required:.4f} {currency_code}"
+        message = (
+            f"Недостаточно средств: доступно {available:.4f} {currency_code}, "
+            f"требуется {required:.4f} {currency_code}"
+        )
         super().__init__(message)
 
 
@@ -33,7 +36,10 @@ class InvalidAmountError(ValutaTradeError):
     
     def __init__(self, amount: float):
         self.amount = amount
-        message = f"Некорректная сумма: {amount}. Сумма должна быть положительным числом"
+        message = (
+            f"Некорректная сумма: {amount}. "
+            f"Сумма должна быть положительным числом"
+        )
         super().__init__(message)
 
 

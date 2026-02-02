@@ -2,14 +2,12 @@
 Операции чтения/записи для файлов с курсами валют
 """
 
-import json
-import os
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, Optional
 
 from valutatrade_hub.infra.database import db
-from valutatrade_hub.parser_service.config import config
 from valutatrade_hub.logging_config import get_logger
+from valutatrade_hub.parser_service.config import config
 
 logger = get_logger(__name__)
 
@@ -23,7 +21,8 @@ class RatesStorage:
         self.rates_file = config.RATES_FILE_PATH
         self.history_file = config.HISTORY_FILE_PATH
     
-    def save_current_rates(self, rates: Dict[str, float], source: str = "Parser") -> bool:
+    def save_current_rates(self, rates: Dict[str, float],
+                           source: str = "Parser") -> bool:
         """
         Сохраняет текущие курсы в rates.json
         
@@ -87,9 +86,10 @@ class RatesStorage:
             success = db.save_json(self.history_file, history_data)
             
             if success:
-                logger.info(f"Исторические данные сохранены ({len(rates)} записей)")
+                logger.info(f"Исторические данные сохранены "
+                           f"({len(rates)} записей)")
             else:
-                logger.error(f"Ошибка при сохранении исторических данных")
+                logger.error("Ошибка при сохранении исторических данных")
             
             return success
             
@@ -149,12 +149,14 @@ class RatesStorage:
             to_currency: Целевая валюта
             rate: Курс обмена
             source: Источник данных
-            meta: Дополнительные метаданные           
+            meta: Дополнительные метаданные
+            
         Returns:
             Отформатированная запись для истории
         """
         timestamp = datetime.now().isoformat()
-        rate_id = f"{from_currency}_{to_currency}_{timestamp.replace(':', '-').replace('.', '-')}"
+        rate_id = (f"{from_currency}_{to_currency}_"
+                  f"{timestamp.replace(':', '-').replace('.', '-')}")
         
         record = {
             "id": rate_id,

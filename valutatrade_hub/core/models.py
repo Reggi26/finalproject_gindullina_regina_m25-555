@@ -234,7 +234,8 @@ class Wallet:
         if value < 0:
             raise ValueError("Баланс не может быть отрицательным")
 
-        if self._currency_code in ["USD", "EUR", "RUB", "GBP", "JPY"] or len(self._currency_code) == 3:
+        if (self._currency_code in ["USD", "EUR", "RUB", "GBP", "JPY"] or
+                len(self._currency_code) == 3):
             self._balance = round(value, 2)
         else:
             self._balance = round(value, 8)
@@ -281,8 +282,11 @@ class Wallet:
         return {
             "currency_code": self._currency_code,
             "balance": self._balance,
-            "formatted_balance": f"{self._balance:.2f} {self._currency_code}" if len(self._currency_code) == 3
-            else f"{self._balance:.8f} {self._currency_code}"
+            "formatted_balance": (
+                f"{self._balance:.2f} {self._currency_code}"
+                if len(self._currency_code) == 3
+                else f"{self._balance:.8f} {self._currency_code}"
+            )
         }
 
     def to_dict(self) -> dict:
@@ -402,7 +406,8 @@ class Portfolio:
 
         return round(total_value, 2)
 
-    def get_exchange_rate(self, from_currency: str, to_currency: str) -> Optional[float]:
+    def get_exchange_rate(self, from_currency: str,
+                          to_currency: str) -> Optional[float]:
         """
         Получает курс обмена между валютами
         """
@@ -463,7 +468,7 @@ class Portfolio:
 
     def get_portfolio_info(self) -> dict:
         """
-        Возвращает полную информацию о портфеле
+        Возвращает полную информацию о портфеля
         """
         wallets_info = {}
         for currency_code, wallet in self._wallets.items():
@@ -502,7 +507,8 @@ class Portfolio:
             "ETH_BTC": 0.0625,
         }
 
-    def update_exchange_rate(self, from_currency: str, to_currency: str, rate: float) -> None:
+    def update_exchange_rate(self, from_currency: str, to_currency: str,
+                             rate: float) -> None:
         """
         Обновляет курс обмена между валютами
         """
@@ -540,4 +546,7 @@ class Portfolio:
 
     def __str__(self) -> str:
         info = self.get_portfolio_info()
-        return f"Портфель пользователя {self._user_id}: {info['wallet_count']} кошельков, общая стоимость: ${info['total_value_usd']:.2f}"
+        return (
+            f"Портфель пользователя {self._user_id}: {info['wallet_count']} "
+            f"кошельков, общая стоимость: ${info['total_value_usd']:.2f}"
+        )

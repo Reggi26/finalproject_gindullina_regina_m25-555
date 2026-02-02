@@ -236,7 +236,8 @@ class RateManager:
         except Exception:
             return False
 
-    def get_rate(self, from_currency: str, to_currency: str) -> Optional[Tuple[float, datetime]]:
+    def get_rate(self, from_currency: str, 
+                 to_currency: str) -> Optional[Tuple[float, datetime]]:
         """
         Получает курс между двумя валютами
 
@@ -266,7 +267,10 @@ class RateManager:
         reverse_key = f"{to_currency}_{from_currency}"
         if "rates" in rates_data and reverse_key in rates_data["rates"]:
             rate_info = rates_data["rates"][reverse_key]
-            return 1.0 / rate_info["rate"], datetime.fromisoformat(rate_info["updated_at"])
+            return (
+                1.0 / rate_info["rate"],
+                datetime.fromisoformat(rate_info["updated_at"])
+            )
 
         if from_currency != "USD" and to_currency != "USD":
             rate1 = self.get_rate(from_currency, "USD")
@@ -313,7 +317,9 @@ class RateManager:
         Получает все курсы для базовой валюты
         """
         rates = {}
-        currencies = ["USD", "EUR", "BTC", "ETH", "RUB", "GBP", "JPY", "ADA", "SOL", "XRP"]
+        currencies = ["USD", "EUR", "BTC", "ETH", "RUB", "GBP", "JPY",
+                      "ADA", "SOL", "XRP"
+                     ]
 
         for currency in currencies:
             if currency != base_currency:

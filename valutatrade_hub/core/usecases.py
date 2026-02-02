@@ -1,4 +1,3 @@
-
 import hashlib
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple
@@ -25,7 +24,8 @@ class UserUseCases:
         self.user_manager = UserManager()
 
     @log_action(action_name="REGISTER")
-    def register_user(self, username: str, password: str) -> Tuple[bool, str, Optional[int]]:
+    def register_user(self, username: str,
+                      password: str) -> Tuple[bool, str, Optional[int]]:
         """
         Регистрирует нового пользователя.
 
@@ -69,7 +69,9 @@ class UserUseCases:
                 portfolio = Portfolio(user_id=user_id)
                 portfolio_manager.update_portfolio(portfolio)
 
-                return True, f"Пользователь '{username}' зарегистрирован (id={user_id}).", user_id
+                return (True,
+                        f"Пользователь '{username}' зарегистрирован (id={user_id}).",
+                        user_id)
             else:
                 return False, f"Ошибка при сохранении пользователя '{username}'", None
 
@@ -77,7 +79,8 @@ class UserUseCases:
             return False, f"Ошибка при регистрации: {str(e)}", None
 
     @log_action(action_name="LOGIN")
-    def authenticate_user(self, username: str, password: str) -> Tuple[bool, Optional[User], str]:
+    def authenticate_user(self, username: str,
+                          password: str) -> Tuple[bool, Optional[User], str]:
         """
         Аутентифицирует пользователя.
 
@@ -132,7 +135,9 @@ class UserUseCases:
                 raise UserNotFoundError(user_id=user.user_id)
 
             if existing_user.username != user.username:
-                user_with_same_name = self.user_manager.find_user_by_username(user.username)
+                user_with_same_name = self.user_manager.find_user_by_username(
+                    user.username
+                )
                 if user_with_same_name and user_with_same_name.user_id != user.user_id:
                     return False, f"Имя пользователя '{user.username}' уже занято"
 
@@ -154,7 +159,9 @@ class PortfolioUseCases:
         self.portfolio_manager = PortfolioManager()
         self.rate_manager = RateManager()
 
-    def get_user_portfolio(self, user_id: int, base_currency: str = "USD") -> Tuple[bool, Optional[Dict], str]:
+    def get_user_portfolio(self, user_id: int,
+                           base_currency: str = "USD") -> Tuple[bool, Optional[Dict],
+                                                                str]:
         """
         Получает портфель пользователя с конвертацией в базовую валюту.
 
@@ -167,7 +174,7 @@ class PortfolioUseCases:
         """
         try:
             try:
-                base_currency_obj = get_currency(base_currency)
+                get_currency(base_currency)
             except CurrencyNotFoundError as e:
                 return False, None, str(e)
 
@@ -185,9 +192,14 @@ class PortfolioUseCases:
                 if currency_code == base_currency:
                     value = balance
                 else:
-                    rate_info = self.rate_manager.get_rate(currency_code, base_currency)
+                    rate_info = self.rate_manager.get_rate(currency_code,
+                                                           base_currency)
                     if not rate_info:
-                        return False, None, f"Не удалось получить курс для {currency_code}→{base_currency}"
+                        return (
+                            False,
+                            None,
+                            f"Не получен курс для {currency_code}→{base_currency}"
+                        )
 
                     rate, _ = rate_info
                     value = balance * rate
@@ -213,7 +225,8 @@ class PortfolioUseCases:
             return False, None, f"Ошибка при загрузке портфеля: {str(e)}"
 
     @log_action(action_name="BUY", verbose=True)
-    def buy_currency(self, user_id: int, currency_code: str, amount: float) -> Tuple[bool, str, Optional[float]]:
+    def buy_currency(self, user_id: int, currency_code: str,
+                     amount: float) -> Tuple[bool, str, Optional[float]]:
         """
         Покупает валюту.
 
@@ -234,12 +247,12 @@ class PortfolioUseCases:
             raise InvalidAmountError(amount)
 
         try:
-            currency = get_currency(currency_code)
+            get_currency(currency_code)
         except CurrencyNotFoundError as e:
             raise e
 
         currency_code = currency_code.upper().strip()
-        
+
         portfolio = self.portfolio_manager.get_portfolio_by_user_id(user_id)
         if portfolio is None:
             raise UserNotFoundError(user_id=user_id)
@@ -251,7 +264,9 @@ class PortfolioUseCases:
         else:
             rate_info = self.rate_manager.get_rate("USD", currency_code)
             if not rate_info:
-                raise CurrencyNotFoundError(f"Не удалось получить курс для USD→{currency_code}")
+                raise CurrencyNotFoundError(
+                    f"Не удалось получить курс для USD→{currency_code}"
+                )
 
             rate, _ = rate_info
 
@@ -294,7 +309,8 @@ class PortfolioUseCases:
         self.portfolio_manager.update_portfolio(portfolio)
 
         message = (
-            f"Покупка выполнена: {amount:.4f} {currency_code} по курсу {display_rate:.2f} USD/{currency_code}\n"
+            f"Покупка выполнена: {amount:.4f} {currency_code} "
+            f"по курсу {display_rate:.2f} USD/{currency_code}\n"
             f"Стоимость покупки: ${purchase_cost:.2f} USD\n"
             f"Изменения в портфеле:\n"
             f"- {currency_code}: было {old_balance:.4f} → стало {wallet.balance:.4f}\n"
@@ -304,7 +320,8 @@ class PortfolioUseCases:
         return True, message, purchase_cost
 
     @log_action(action_name="SELL", verbose=True)
-    def sell_currency(self, user_id: int, currency_code: str, amount: float) -> Tuple[bool, str, Optional[float]]:
+    def sell_currency(self, user_id: int, currency_code: str,
+                      amount: float) -> Tuple[bool, str, Optional[float]]:
         """
         Продаёт валюту.
 
@@ -325,12 +342,12 @@ class PortfolioUseCases:
             raise InvalidAmountError(amount)
 
         try:
-            currency = get_currency(currency_code)
+            get_currency(currency_code)
         except CurrencyNotFoundError as e:
             raise e
 
         currency_code = currency_code.upper().strip()
-        
+
         portfolio = self.portfolio_manager.get_portfolio_by_user_id(user_id)
         if portfolio is None:
             raise UserNotFoundError(user_id=user_id)
@@ -357,7 +374,9 @@ class PortfolioUseCases:
         else:
             rate_info = self.rate_manager.get_rate("USD", currency_code)
             if not rate_info:
-                raise CurrencyNotFoundError(f"Не удалось получить курс для USD→{currency_code}")
+                raise CurrencyNotFoundError(
+                    f"Не удалось получить курс для USD→{currency_code}"
+                )
 
             rate, _ = rate_info
 
@@ -388,7 +407,8 @@ class PortfolioUseCases:
         self.portfolio_manager.update_portfolio(portfolio)
 
         message = (
-            f"Продажа выполнена: {amount:.4f} {currency_code} по курсу {display_rate:.2f} USD/{currency_code}\n"
+            f"Продажа выполнена: {amount:.4f} {currency_code} "
+            f"по курсу {display_rate:.2f} USD/{currency_code}\n"
             f"Выручка от продажи: ${sale_revenue:.2f} USD\n"
             f"Изменения в портфеле:\n"
             f"- {currency_code}: было {old_balance:.4f} → стало {wallet.balance:.4f}\n"
@@ -404,7 +424,8 @@ class RateUseCases:
     def __init__(self):
         self.rate_manager = RateManager()
 
-    def get_exchange_rate(self, from_currency: str, to_currency: str) -> Tuple[bool, Optional[Dict], str]:
+    def get_exchange_rate(self, from_currency: str,
+                          to_currency: str) -> Tuple[bool, Optional[Dict], str]:
         """
         Получает текущий курс между двумя валютами.
 
@@ -433,32 +454,38 @@ class RateUseCases:
 
             rates_ttl = settings.get("rates_ttl_seconds", 300)
             is_fresh = True
-            
+
             if rate_info:
                 rate, timestamp = rate_info
                 age = datetime.now() - timestamp
                 is_fresh = age <= timedelta(seconds=rates_ttl)
-                
+
                 if not is_fresh:
                     try:
-                        updated_rate = self._fetch_rate_from_external(from_currency, to_currency)
+                        updated_rate = self._fetch_rate_from_external(from_currency,
+                                                                      to_currency)
                         if updated_rate:
-                            self.rate_manager.update_rate(from_currency, to_currency, updated_rate, "ExternalAPI")
+                            self.rate_manager.update_rate(
+                                from_currency, to_currency, updated_rate, "ExternalAPI"
+                            )
                             rate = updated_rate
                             timestamp = datetime.now()
                             is_fresh = True
                     except Exception:
                         pass
             else:
-
                 try:
                     rate = self._fetch_rate_from_external(from_currency, to_currency)
                     if rate:
-                        self.rate_manager.update_rate(from_currency, to_currency, rate, "ExternalAPI")
+                        self.rate_manager.update_rate(
+                            from_currency, to_currency, rate, "ExternalAPI"
+                        )
                         timestamp = datetime.now()
                         is_fresh = True
                     else:
-                        raise ApiRequestError("Не удалось получить курс из внешнего источника")
+                        raise ApiRequestError(
+                            "Не удалось получить курс из внешнего источника"
+                        )
                 except Exception as e:
                     raise ApiRequestError(str(e))
 
@@ -484,7 +511,8 @@ class RateUseCases:
         except Exception as e:
             return False, None, f"Ошибка при получении курса: {str(e)}"
 
-    def _fetch_rate_from_external(self, from_currency: str, to_currency: str) -> Optional[float]:
+    def _fetch_rate_from_external(self, from_currency: str,
+                                  to_currency: str) -> Optional[float]:
         """
         Получает курс из внешнего источника (заглушка).
 
@@ -498,7 +526,6 @@ class RateUseCases:
         Raises:
             ApiRequestError: если не удалось получить курс
         """
-
         stub_rates = {
             "USD_EUR": 0.92,
             "EUR_USD": 1.09,
@@ -522,16 +549,18 @@ class RateUseCases:
 
         key = f"{from_currency}_{to_currency}"
         reverse_key = f"{to_currency}_{from_currency}"
-        
+
         if key in stub_rates:
             return stub_rates[key]
         elif reverse_key in stub_rates:
             return 1.0 / stub_rates[reverse_key]
-        
-        if from_currency not in ["USD", "EUR", "BTC", "ETH", "RUB", "GBP", "JPY"] or \
-           to_currency not in ["USD", "EUR", "BTC", "ETH", "RUB", "GBP", "JPY"]:
-            raise ApiRequestError(f"Курс для пары {from_currency}/{to_currency} недоступен")
-        
+
+        if (from_currency not in ["USD", "EUR", "BTC", "ETH", "RUB", "GBP", "JPY"] or
+                to_currency not in ["USD", "EUR", "BTC", "ETH", "RUB", "GBP", "JPY"]):
+            raise ApiRequestError(
+                f"Курс для пары {from_currency}/{to_currency} недоступен"
+            )
+
         return None
 
     def refresh_all_rates(self) -> Tuple[bool, str]:
@@ -544,19 +573,21 @@ class RateUseCases:
         try:
             currencies = ["USD", "EUR", "BTC", "ETH", "RUB", "GBP", "JPY"]
             updated_count = 0
-            
+
             for from_curr in currencies:
                 for to_curr in currencies:
                     if from_curr != to_curr:
                         try:
                             rate = self._fetch_rate_from_external(from_curr, to_curr)
                             if rate:
-                                self.rate_manager.update_rate(from_curr, to_curr, rate, "Refresh")
+                                self.rate_manager.update_rate(
+                                    from_curr, to_curr, rate, "Refresh"
+                                )
                                 updated_count += 1
                         except ApiRequestError:
                             continue
-            
+
             return True, f"Обновлено {updated_count} курсов валют"
-        
+
         except Exception as e:
             return False, f"Ошибка при обновлении курсов: {str(e)}"

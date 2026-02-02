@@ -351,7 +351,9 @@ def validate_currency_code(func: Callable) -> Callable:
             try:
                 get_currency(currency_code)
             except CurrencyNotFoundError:
-                logger.error(f"Invalid currency code in {func.__name__}: {currency_code}")
+                logger.error(
+                    f"Invalid currency code in {func.__name__}: {currency_code}"
+                )
                 raise
         
         return func(*args, **kwargs)

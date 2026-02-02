@@ -5,10 +5,11 @@
 import threading
 import time
 from datetime import datetime, timedelta
+from typing import Dict
 
-from valutatrade_hub.parser_service.updater import RatesUpdater
-from valutatrade_hub.parser_service.config import config
 from valutatrade_hub.logging_config import get_logger
+from valutatrade_hub.parser_service.config import config
+from valutatrade_hub.parser_service.updater import RatesUpdater
 
 logger = get_logger(__name__)
 
@@ -36,7 +37,8 @@ class RatesScheduler:
             logger.warning("Планировщик уже запущен")
             return False
         
-        logger.info(f"Запуск планировщика с интервалом {config.UPDATE_INTERVAL_MINUTES} мин")
+        logger.info(f"Запуск планировщика с интервалом "
+                    f"{config.UPDATE_INTERVAL_MINUTES} мин")
         
         self.is_running = True
         self.scheduler_thread = threading.Thread(
@@ -68,9 +70,10 @@ class RatesScheduler:
                 now = datetime.now()
                 if self.next_update_time is None or now >= self.next_update_time:
                     self._perform_scheduled_update()
-                    self.next_update_time = now + timedelta(seconds=self.update_interval)
+                    self.next_update_time = now + timedelta(
+                        seconds=self.update_interval
+                    )
                 
-
                 sleep_time = 60
                 time.sleep(sleep_time)
                 
@@ -88,9 +91,11 @@ class RatesScheduler:
             results = self.updater.run_update()
             
             if results["success"]:
-                logger.info(f"Запланированное обновление завершено: {results['total_rates']} курсов")
+                logger.info(f"Запланированное обновление завершено: "
+                           f"{results['total_rates']} курсов")
             else:
-                logger.warning(f"Запланированное обновление завершено с ошибками: {len(results['errors'])}")
+                logger.warning(f"Запланированное обновление завершено с ошибками: "
+                             f"{len(results['errors'])}")
                 
         except Exception as e:
             logger.error(f"Ошибка при запланированном обновлении: {e}")
@@ -115,7 +120,10 @@ class RatesScheduler:
         status = {
             "is_running": self.is_running,
             "update_interval_minutes": config.UPDATE_INTERVAL_MINUTES,
-            "next_update_time": self.next_update_time.isoformat() if self.next_update_time else None,
+            "next_update_time": (
+                self.next_update_time.isoformat()
+                if self.next_update_time else None
+            ),
             "update_status": self.updater.get_update_status()
         }
         

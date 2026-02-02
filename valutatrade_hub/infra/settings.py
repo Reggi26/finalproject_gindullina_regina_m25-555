@@ -46,7 +46,10 @@ class SettingsLoader:
             
             "min_password_length": 4,
             "initial_usd_balance": 1000.0,
-            "supported_currencies": ["USD", "EUR", "BTC", "ETH", "RUB", "GBP", "JPY", "ADA", "SOL", "XRP"],
+            "supported_currencies": [
+                "USD", "EUR", "BTC", "ETH", "RUB",
+                "GBP", "JPY", "ADA", "SOL", "XRP"
+            ],
             
             "default_exchange_rates": {
                 "USD_EUR": 0.92,

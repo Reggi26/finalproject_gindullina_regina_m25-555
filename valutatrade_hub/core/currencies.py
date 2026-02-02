@@ -121,8 +121,15 @@ class CryptoCurrency(Currency):
         
         Формат: "[CRYPTO] BTC — Bitcoin (Algo: SHA-256, MCAP: 1.12e12)"
         """
-        mcap_str = f"{self._market_cap:.2e}" if self._market_cap >= 1_000_000 else f"{self._market_cap:,.2f}"
-        return f"[CRYPTO] {self._code} — {self._name} (Algo: {self._algorithm}, MCAP: {mcap_str})"
+        mcap_str = (
+            f"{self._market_cap:.2e}" 
+            if self._market_cap >= 1_000_000 
+            else f"{self._market_cap:,.2f}"
+        )
+        return (
+            f"[CRYPTO] {self._code} — {self._name} "
+            f"(Algo: {self._algorithm}, MCAP: {mcap_str})"
+        )
 
 
 _CURRENCY_REGISTRY: Dict[str, Currency] = {}
@@ -175,8 +182,12 @@ def _init_default_currencies() -> None:
     register_currency(CryptoCurrency("Bitcoin", "BTC", "SHA-256", 1_200_000_000_000))
     register_currency(CryptoCurrency("Ethereum", "ETH", "Ethash", 400_000_000_000))
     register_currency(CryptoCurrency("Cardano", "ADA", "Ouroboros", 40_000_000_000))
-    register_currency(CryptoCurrency("Solana", "SOL", "Proof of History", 80_000_000_000))
-    register_currency(CryptoCurrency("Ripple", "XRP", "XRP Ledger Consensus", 60_000_000_000))
+    register_currency(CryptoCurrency(
+        "Solana", "SOL", "Proof of History", 80_000_000_000
+    ))
+    register_currency(CryptoCurrency(
+        "Ripple", "XRP", "XRP Ledger Consensus", 60_000_000_000
+    ))
 
 
 _init_default_currencies()

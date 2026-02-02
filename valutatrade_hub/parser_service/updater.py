@@ -2,18 +2,18 @@
 Основной модуль обновления курсов валют
 """
 
-from typing import Dict, List, Optional
 from datetime import datetime
+from typing import Dict, List, Optional
 
 from valutatrade_hub.core.exceptions import ApiRequestError
+from valutatrade_hub.logging_config import get_logger
 from valutatrade_hub.parser_service.api_clients import (
+    BaseApiClient,
     CoinGeckoClient,
     ExchangeRateApiClient,
-    BaseApiClient
 )
-from valutatrade_hub.parser_service.storage import RatesStorage
 from valutatrade_hub.parser_service.config import config
-from valutatrade_hub.logging_config import get_logger
+from valutatrade_hub.parser_service.storage import RatesStorage
 
 logger = get_logger(__name__)
 
@@ -67,7 +67,8 @@ class RatesUpdater:
             if source_filter == "coingecko":
                 clients_to_use = [c for c in self.clients if c.name == "CoinGecko"]
             elif source_filter == "exchangerate":
-                clients_to_use = [c for c in self.clients if c.name == "ExchangeRate-API"]
+                clients_to_use = [c for c in self.clients 
+                                  if c.name == "ExchangeRate-API"]
         
         for client in clients_to_use:
             client_name = client.name

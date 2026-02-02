@@ -4,7 +4,7 @@
 
 import os
 from dataclasses import dataclass, field
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple
 
 
 @dataclass

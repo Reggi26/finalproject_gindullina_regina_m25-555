@@ -6,13 +6,12 @@ import json
 import time
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
-from urllib.parse import urlencode
 
 import requests
 
 from valutatrade_hub.core.exceptions import ApiRequestError
-from valutatrade_hub.parser_service.config import config
 from valutatrade_hub.logging_config import get_logger
+from valutatrade_hub.parser_service.config import config
 
 logger = get_logger(__name__)
 
@@ -164,7 +163,10 @@ class ExchangeRateApiClient(BaseApiClient):
         
         logger.info("Получение курсов фиатных валют от ExchangeRate-API...")
         
-        url = f"{config.EXCHANGERATE_API_URL}/{self.api_key}/latest/{config.BASE_CURRENCY}"
+        url = (
+            f"{config.EXCHANGERATE_API_URL}/{self.api_key}/"
+            f"latest/{config.BASE_CURRENCY}"
+        )
         
         try:
             data = self._make_request(url)
